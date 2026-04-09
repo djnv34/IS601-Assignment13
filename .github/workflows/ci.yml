@@ -110,6 +110,6 @@ jobs:
           context: .
           push: true
           tags: |
-            daril26/601_module8:latest
-            daril26/601_module8:${{ github.sha }}
+            daril26/assignment10:latest
+            daril26/assignment10:${{ github.sha }}
           platforms: linux/amd64,linux/arm64

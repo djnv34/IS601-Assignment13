@@ -1,3 +1,35 @@
+# FastAPI Calculator with Secure User Model
+
+This project builds on the FastAPI Calculator application by adding a secure user model using SQLAlchemy and Pydantic. It includes password hashing, unit tests, integration tests with PostgreSQL, end-to-end tests, and a CI/CD pipeline with GitHub Actions and Docker Hub.
+
+## Run Tests Locally
+
+1. Create and activate a virtual environment:
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+2. Install dependencies:
+```bash
+pip install -r requirements.txt
+playwright install
+```
+
+2. Start Docker:
+```bash
+docker-compose up --build
+```
+
+3. Run all tests:
+```bash
+pytest -v
+```
+4. Docker Hub Image Link:
+```bash
+https://hub.docker.com/r/daril26/assignment10
+```
+
+
 # 📦 Project Setup
 
 ---
