@@ -20,7 +20,7 @@ services:
     build: .  # Instructs Docker Compose to build the Docker image using the Dockerfile located in the current directory (denoted by '.').
     
     # Container Naming
-    container_name: fastapi_calculator2  # Assigns a custom name "fastapi_calculator" to the container. This makes it easier to reference the container in Docker commands.
+    container_name: fastapi_calculator3  # Assigns a custom name "fastapi_calculator" to the container. This makes it easier to reference the container in Docker commands.
     
     # Port Mapping
     ports:
