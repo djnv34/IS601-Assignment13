@@ -9,6 +9,11 @@ class UserCreate(BaseModel):
     password: str = Field(..., min_length=6)
 
 
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
 class UserRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -23,6 +28,18 @@ class CalculationCreate(BaseModel):
     b: float
     type: Literal["Add", "Sub", "Multiply", "Divide"]
     user_id: Optional[int] = None
+
+    @model_validator(mode="after")
+    def validate_divide_by_zero(self):
+        if self.type == "Divide" and self.b == 0:
+            raise ValueError("Cannot divide by zero.")
+        return self
+
+
+class CalculationUpdate(BaseModel):
+    a: float
+    b: float
+    type: Literal["Add", "Sub", "Multiply", "Divide"]
 
     @model_validator(mode="after")
     def validate_divide_by_zero(self):

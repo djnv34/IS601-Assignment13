@@ -25,6 +25,6 @@ class Calculation(Base):
     type = Column(String(20), nullable=False)
     result = Column(Float, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     user = relationship("User", back_populates="calculations")
