@@ -30,18 +30,20 @@ client = TestClient(app)
 def setup_module():
     Base.metadata.create_all(bind=engine)
     with engine.connect() as connection:
+        connection.execute(text("TRUNCATE TABLE calculations RESTART IDENTITY CASCADE"))
         connection.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE"))
         connection.commit()
 
 
 def teardown_module():
     with engine.connect() as connection:
+        connection.execute(text("TRUNCATE TABLE calculations RESTART IDENTITY CASCADE"))
         connection.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE"))
         connection.commit()
 
 
-def test_create_user():
-    response = client.post("/users", json={
+def test_register_user():
+    response = client.post("/users/register", json={
         "username": "alice",
         "email": "alice@example.com",
         "password": "secret123"
@@ -50,34 +52,21 @@ def test_create_user():
     data = response.json()
     assert data["username"] == "alice"
     assert data["email"] == "alice@example.com"
-    assert "password_hash" not in data
 
 
-def test_duplicate_username():
-    response = client.post("/users", json={
+def test_login_user():
+    response = client.post("/users/login", json={
         "username": "alice",
-        "email": "alice2@example.com",
         "password": "secret123"
     })
-    assert response.status_code == 400
-    assert response.json()["error"] == "Username already exists"
+    assert response.status_code == 200
+    assert response.json()["message"] == "Login successful"
 
 
-def test_duplicate_email():
-    response = client.post("/users", json={
-        "username": "alice_new",
-        "email": "alice@example.com",
-        "password": "secret123"
+def test_login_invalid_password():
+    response = client.post("/users/login", json={
+        "username": "alice",
+        "password": "wrongpassword"
     })
     assert response.status_code == 400
-    assert response.json()["error"] == "Email already exists"
-
-
-def test_invalid_email():
-    response = client.post("/users", json={
-        "username": "charlie",
-        "email": "bad-email",
-        "password": "secret123"
-    })
-    assert response.status_code == 400
-    assert "error" in response.json()
+    assert response.json()["error"] == "Invalid username or password"

@@ -9,9 +9,17 @@ import logging
 
 from app.operations import add, subtract, multiply, divide
 from app.database import Base, engine, get_db
-from app.models import User
-from app.schemas import UserCreate, UserRead
-from app.security import hash_password
+from app.models import User, Calculation
+from app.schemas import (
+    UserCreate,
+    UserLogin,
+    UserRead,
+    CalculationCreate,
+    CalculationUpdate,
+    CalculationRead,
+)
+from app.security import hash_password, verify_password
+from app.factory import CalculationFactory
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -109,16 +117,14 @@ async def divide_route(operation: OperationRequest):
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-@app.post("/users", response_model=UserRead, responses={400: {"model": ErrorResponse}})
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
+@app.post("/users/register", response_model=UserRead, responses={400: {"model": ErrorResponse}})
+def register_user(user: UserCreate, db: Session = Depends(get_db)):
     existing_username = db.query(User).filter(User.username == user.username).first()
     if existing_username:
-        logger.error(f"User creation failed: username '{user.username}' already exists")
         raise HTTPException(status_code=400, detail="Username already exists")
 
     existing_email = db.query(User).filter(User.email == user.email).first()
     if existing_email:
-        logger.error(f"User creation failed: email '{user.email}' already exists")
         raise HTTPException(status_code=400, detail="Email already exists")
 
     db_user = User(
@@ -130,8 +136,91 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
 
-    logger.info(f"User created successfully: {db_user.username}")
+    logger.info(f"User registered successfully: {db_user.username}")
     return db_user
+
+
+@app.post("/users/login", responses={400: {"model": ErrorResponse}})
+def login_user(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.username == user.username).first()
+    if not db_user:
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+
+    if not verify_password(user.password, db_user.password_hash):
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+
+    logger.info(f"User logged in successfully: {db_user.username}")
+    return {"message": "Login successful"}
+
+
+@app.get("/calculations", response_model=list[CalculationRead])
+def browse_calculations(db: Session = Depends(get_db)):
+    return db.query(Calculation).all()
+
+
+@app.get("/calculations/{calculation_id}", response_model=CalculationRead, responses={404: {"model": ErrorResponse}})
+def read_calculation(calculation_id: int, db: Session = Depends(get_db)):
+    calculation = db.query(Calculation).filter(Calculation.id == calculation_id).first()
+    if not calculation:
+        raise HTTPException(status_code=404, detail="Calculation not found")
+    return calculation
+
+
+@app.post("/calculations", response_model=CalculationRead, responses={400: {"model": ErrorResponse}})
+def add_calculation(calculation: CalculationCreate, db: Session = Depends(get_db)):
+    if calculation.user_id is not None:
+        existing_user = db.query(User).filter(User.id == calculation.user_id).first()
+        if not existing_user:
+            raise HTTPException(status_code=400, detail="User does not exist")
+
+    try:
+        result = CalculationFactory.compute(calculation.a, calculation.b, calculation.type)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    db_calculation = Calculation(
+        a=calculation.a,
+        b=calculation.b,
+        type=calculation.type,
+        result=result,
+        user_id=calculation.user_id,
+    )
+    db.add(db_calculation)
+    db.commit()
+    db.refresh(db_calculation)
+    return db_calculation
+
+
+@app.put("/calculations/{calculation_id}", response_model=CalculationRead, responses={404: {"model": ErrorResponse}, 400: {"model": ErrorResponse}})
+def edit_calculation(calculation_id: int, calculation_update: CalculationUpdate, db: Session = Depends(get_db)):
+    calculation = db.query(Calculation).filter(Calculation.id == calculation_id).first()
+    if not calculation:
+        raise HTTPException(status_code=404, detail="Calculation not found")
+
+    try:
+        result = CalculationFactory.compute(calculation_update.a, calculation_update.b, calculation_update.type)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    calculation.a = calculation_update.a
+    calculation.b = calculation_update.b
+    calculation.type = calculation_update.type
+    calculation.result = result
+
+    db.commit()
+    db.refresh(calculation)
+    return calculation
+
+
+@app.delete("/calculations/{calculation_id}", responses={404: {"model": ErrorResponse}})
+def delete_calculation(calculation_id: int, db: Session = Depends(get_db)):
+    calculation = db.query(Calculation).filter(Calculation.id == calculation_id).first()
+    if not calculation:
+        raise HTTPException(status_code=404, detail="Calculation not found")
+
+    db.delete(calculation)
+    db.commit()
+    return {"message": "Calculation deleted successfully"}
 
 
 if __name__ == "__main__":
