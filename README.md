@@ -1,6 +1,7 @@
-# User & Calculation Routes + Integration Testing 
+# JWT Login/Registration with Client-Side Validation & Playwright E2E
 
-This project implements user registration and login endpoints, as well as calculation CRUD operations. Additionally, it integrate these endpoints with existing models and schemas, then write integration tests to validate their functionality. It completes back-end logic, with the final integration to Docker Hub for continuous deployment.
+This project implements JWT-based authentication for user registration and login. Additionally, it has front-end pages for registration and login, implement Playwright E2E tests, and maintain a CI/CD pipeline for automated testing and deployment to Docker Hub.
+
 
 ## Run Tests Locally
 
@@ -19,18 +20,25 @@ playwright install
 ```bash
 docker-compose up --build
 ```
+3. Run Playwright E2E Tests:
+```bash
+pytest tests/e2e/ -v
+```
 
-3. Run all tests:
+4. Run all tests:
 ```bash
 pytest -v
 ```
-4. Docker Hub Image Link:
+
+5. Docker Hub Image Link:
 ```bash
-https://hub.docker.com/r/daril26/assignment12
+https://hub.docker.com/r/daril26/assignment13
 ```
 
-4. Site Link:
+6. Site Links:
 ```bash
+http://localhost:8000/register
+http://localhost:8000/login
 http://localhost:8000/docs
 ```
 

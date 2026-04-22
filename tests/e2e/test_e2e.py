@@ -4,6 +4,7 @@ import pytest  # Import the pytest framework for writing and running tests
 
 # The following decorators and functions define E2E tests for the FastAPI calculator application.
 
+
 @pytest.mark.e2e
 def test_hello_world(page, fastapi_server):
     """
@@ -13,12 +14,9 @@ def test_hello_world(page, fastapi_server):
     the main header (`<h1>`) correctly displays the text "Hello World". This ensures
     that the server is running and serving the correct template.
     """
-    # Navigate the browser to the homepage URL of the FastAPI application.
     page.goto('http://localhost:8000')
-    
-    # Use an assertion to check that the text within the first <h1> tag is exactly "Hello World".
-    # If the text does not match, the test will fail.
     assert page.inner_text('h1') == 'Hello World'
+
 
 @pytest.mark.e2e
 def test_calculator_add(page, fastapi_server):
@@ -29,21 +27,18 @@ def test_calculator_add(page, fastapi_server):
     on the frontend. It fills in two numbers, clicks the "Add" button, and verifies
     that the result displayed is correct.
     """
-    # Navigate the browser to the homepage URL of the FastAPI application.
     page.goto('http://localhost:8000')
-    
-    # Fill in the first number input field (with id 'a') with the value '10'.
+
     page.fill('#a', '10')
-    
-    # Fill in the second number input field (with id 'b') with the value '5'.
     page.fill('#b', '5')
-    
-    # Click the button that has the exact text "Add". This triggers the addition operation.
+
     page.click('button:text("Add")')
-    
-    # Use an assertion to check that the text within the result div (with id 'result') is exactly "Result: 15".
-    # This verifies that the addition operation was performed correctly and the result is displayed as expected.
+
+    page.wait_for_function(
+        "document.querySelector('#result') && document.querySelector('#result').innerText !== ''"
+    )
     assert page.inner_text('#result') == 'Calculation Result: 15'
+
 
 @pytest.mark.e2e
 def test_calculator_divide_by_zero(page, fastapi_server):
@@ -52,24 +47,139 @@ def test_calculator_divide_by_zero(page, fastapi_server):
 
     This test simulates a user attempting to divide a number by zero using the calculator.
     It fills in the numbers, clicks the "Divide" button, and verifies that the appropriate
-    error message is displayed. This ensures that the application correctly handles invalid
-    operations and provides meaningful feedback to the user.
+    error message is displayed.
     """
-    # Navigate the browser to the homepage URL of the FastAPI application.
     page.goto('http://localhost:8000')
-    
-    # Fill in the first number input field (with id 'a') with the value '10'.
+
     page.fill('#a', '10')
-    
-    # Fill in the second number input field (with id 'b') with the value '0', attempting to divide by zero.
     page.fill('#b', '0')
-    
-    # Click the button that has the exact text "Divide". This triggers the division operation.
+
     page.click('button:text("Divide")')
-    
-    # Use an assertion to check that the text within the result div (with id 'result') is exactly
-    # "Error: Cannot divide by zero!". This verifies that the application handles division by zero
-    # gracefully and displays the correct error message to the user.
+
+    page.wait_for_function(
+        "document.querySelector('#result') && document.querySelector('#result').innerText !== ''"
+    )
     assert page.inner_text('#result') == 'Error: Cannot divide by zero!'
 
-    
+
+# ---------------------------------------------------
+# AUTHENTICATION TESTS FOR REGISTRATION AND LOGIN
+# ---------------------------------------------------
+
+
+@pytest.mark.e2e
+def test_register_success(page, fastapi_server):
+    """
+    Test successful user registration.
+
+    This test simulates a user filling out the registration form with valid data.
+    It verifies that the application responds with a success message and stores the JWT.
+    """
+    page.goto("http://localhost:8000/register")
+
+    page.fill("#username", "dariel")
+    page.fill("#email", "dariel@example.com")
+    page.fill("#password", "secret123")
+    page.fill("#confirmPassword", "secret123")
+
+    page.click("button:text('Register')")
+
+    page.wait_for_function(
+        "document.querySelector('#message') && document.querySelector('#message').innerText !== ''"
+    )
+    assert "Registration successful" in page.inner_text("#message")
+
+
+@pytest.mark.e2e
+def test_register_short_password(page, fastapi_server):
+    """
+    Test registration failure with a short password.
+
+    This test ensures that the front-end validation prevents weak passwords
+    and displays an appropriate error message.
+    """
+    page.goto("http://localhost:8000/register")
+
+    page.fill("#username", "dariel2")
+    page.fill("#email", "dariel2@example.com")
+    page.fill("#password", "123")
+    page.fill("#confirmPassword", "123")
+
+    page.click("button:text('Register')")
+
+    page.wait_for_function(
+        "document.querySelector('#message') && document.querySelector('#message').innerText !== ''"
+    )
+    assert "Password must be at least 6 characters." in page.inner_text("#message")
+
+
+@pytest.mark.e2e
+def test_login_success(page, fastapi_server):
+    """
+    Test successful user login.
+
+    This test first registers a new user, then attempts to log in with valid credentials.
+    It verifies that the login process succeeds and returns a success message.
+    """
+    # Register user first
+    page.goto("http://localhost:8000/register")
+
+    page.fill("#username", "dariel3")
+    page.fill("#email", "dariel3@example.com")
+    page.fill("#password", "secret123")
+    page.fill("#confirmPassword", "secret123")
+
+    page.click("button:text('Register')")
+
+    page.wait_for_function(
+        "document.querySelector('#message') && document.querySelector('#message').innerText !== ''"
+    )
+
+    # Then login
+    page.goto("http://localhost:8000/login")
+
+    page.fill("#email", "dariel3@example.com")
+    page.fill("#password", "secret123")
+
+    page.click("button:text('Login')")
+
+    page.wait_for_function(
+        "document.querySelector('#message') && document.querySelector('#message').innerText !== ''"
+    )
+    assert "Login successful" in page.inner_text("#message")
+
+
+@pytest.mark.e2e
+def test_login_wrong_password(page, fastapi_server):
+    """
+    Test login failure with incorrect password.
+
+    This test verifies that the application correctly rejects invalid login attempts
+    and displays an error message.
+    """
+    # Register user first
+    page.goto("http://localhost:8000/register")
+
+    page.fill("#username", "dariel4")
+    page.fill("#email", "dariel4@example.com")
+    page.fill("#password", "secret123")
+    page.fill("#confirmPassword", "secret123")
+
+    page.click("button:text('Register')")
+
+    page.wait_for_function(
+        "document.querySelector('#message') && document.querySelector('#message').innerText !== ''"
+    )
+
+    # Attempt login with wrong password
+    page.goto("http://localhost:8000/login")
+
+    page.fill("#email", "dariel4@example.com")
+    page.fill("#password", "wrongpass")
+
+    page.click("button:text('Login')")
+
+    page.wait_for_function(
+        "document.querySelector('#message') && document.querySelector('#message').innerText !== ''"
+    )
+    assert "Invalid credentials" in page.inner_text("#message")
