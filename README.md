@@ -1,6 +1,6 @@
-# Implement and Test a Calculation Model with Optional Factory Pattern
+# User & Calculation Routes + Integration Testing 
 
-This project defines a Calculation model using SQLAlchemy and create robust validation with Pydantic schemas. It also implements a factory pattern for extensibility and reinforce your CI/CD pipeline by testing the new functionality.
+This project implements user registration and login endpoints, as well as calculation CRUD operations. Additionally, it integrate these endpoints with existing models and schemas, then write integration tests to validate their functionality. It completes back-end logic, with the final integration to Docker Hub for continuous deployment.
 
 ## Run Tests Locally
 
@@ -26,7 +26,12 @@ pytest -v
 ```
 4. Docker Hub Image Link:
 ```bash
-https://hub.docker.com/r/daril26/assignment11
+https://hub.docker.com/r/daril26/assignment12
+```
+
+4. Site Link:
+```bash
+http://localhost:8000/docs
 ```
 
 

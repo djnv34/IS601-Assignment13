@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
 
 
 class UserLogin(BaseModel):
-    username: str
+    email: EmailStr
     password: str
 
 
@@ -21,6 +21,11 @@ class UserRead(BaseModel):
     username: str
     email: EmailStr
     created_at: datetime
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
 
 class CalculationCreate(BaseModel):

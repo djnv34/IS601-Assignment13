@@ -14,11 +14,12 @@ from app.schemas import (
     UserCreate,
     UserLogin,
     UserRead,
+    TokenResponse,
     CalculationCreate,
     CalculationUpdate,
     CalculationRead,
 )
-from app.security import hash_password, verify_password
+from app.security import hash_password, verify_password, create_access_token
 from app.factory import CalculationFactory
 
 logging.basicConfig(level=logging.INFO)
@@ -53,25 +54,29 @@ class ErrorResponse(BaseModel):
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
     logger.error(f"HTTPException on {request.url.path}: {exc.detail}")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"error": exc.detail},
-    )
+    return JSONResponse(status_code=exc.status_code, content={"error": exc.detail})
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     error_messages = "; ".join([f"{err['loc'][-1]}: {err['msg']}" for err in exc.errors()])
     logger.error(f"ValidationError on {request.url.path}: {error_messages}")
-    return JSONResponse(
-        status_code=400,
-        content={"error": error_messages},
-    )
+    return JSONResponse(status_code=400, content={"error": error_messages})
 
 
 @app.get("/")
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/register")
+async def register_page(request: Request):
+    return templates.TemplateResponse("register.html", {"request": request})
+
+
+@app.get("/login")
+async def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
 
 @app.post("/add", response_model=OperationResponse, responses={400: {"model": ErrorResponse}})
@@ -80,7 +85,6 @@ async def add_route(operation: OperationRequest):
         result = add(operation.a, operation.b)
         return OperationResponse(result=result)
     except Exception as e:
-        logger.error(f"Add Operation Error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -90,7 +94,6 @@ async def subtract_route(operation: OperationRequest):
         result = subtract(operation.a, operation.b)
         return OperationResponse(result=result)
     except Exception as e:
-        logger.error(f"Subtract Operation Error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -100,7 +103,6 @@ async def multiply_route(operation: OperationRequest):
         result = multiply(operation.a, operation.b)
         return OperationResponse(result=result)
     except Exception as e:
-        logger.error(f"Multiply Operation Error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -110,14 +112,12 @@ async def divide_route(operation: OperationRequest):
         result = divide(operation.a, operation.b)
         return OperationResponse(result=result)
     except ValueError as e:
-        logger.error(f"Divide Operation Error: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Divide Operation Internal Error: {str(e)}")
+    except Exception:
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 
-@app.post("/users/register", response_model=UserRead, responses={400: {"model": ErrorResponse}})
+@app.post("/register", response_model=TokenResponse, responses={400: {"model": ErrorResponse}})
 def register_user(user: UserCreate, db: Session = Depends(get_db)):
     existing_username = db.query(User).filter(User.username == user.username).first()
     if existing_username:
@@ -136,21 +136,18 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(db_user)
 
-    logger.info(f"User registered successfully: {db_user.username}")
-    return db_user
+    token = create_access_token({"sub": db_user.email, "user_id": db_user.id})
+    return {"access_token": token, "token_type": "bearer"}
 
 
-@app.post("/users/login", responses={400: {"model": ErrorResponse}})
+@app.post("/login", response_model=TokenResponse, responses={401: {"model": ErrorResponse}})
 def login_user(user: UserLogin, db: Session = Depends(get_db)):
-    db_user = db.query(User).filter(User.username == user.username).first()
-    if not db_user:
-        raise HTTPException(status_code=400, detail="Invalid username or password")
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if not db_user or not verify_password(user.password, db_user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    if not verify_password(user.password, db_user.password_hash):
-        raise HTTPException(status_code=400, detail="Invalid username or password")
-
-    logger.info(f"User logged in successfully: {db_user.username}")
-    return {"message": "Login successful"}
+    token = create_access_token({"sub": db_user.email, "user_id": db_user.id})
+    return {"access_token": token, "token_type": "bearer"}
 
 
 @app.get("/calculations", response_model=list[CalculationRead])
@@ -173,10 +170,7 @@ def add_calculation(calculation: CalculationCreate, db: Session = Depends(get_db
         if not existing_user:
             raise HTTPException(status_code=400, detail="User does not exist")
 
-    try:
-        result = CalculationFactory.compute(calculation.a, calculation.b, calculation.type)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    result = CalculationFactory.compute(calculation.a, calculation.b, calculation.type)
 
     db_calculation = Calculation(
         a=calculation.a,
@@ -197,10 +191,7 @@ def edit_calculation(calculation_id: int, calculation_update: CalculationUpdate,
     if not calculation:
         raise HTTPException(status_code=404, detail="Calculation not found")
 
-    try:
-        result = CalculationFactory.compute(calculation_update.a, calculation_update.b, calculation_update.type)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    result = CalculationFactory.compute(calculation_update.a, calculation_update.b, calculation_update.type)
 
     calculation.a = calculation_update.a
     calculation.b = calculation_update.b
