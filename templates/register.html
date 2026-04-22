@@ -6,43 +6,66 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
+      background: linear-gradient(to right, #e6ecf5, #dce6f2);
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
       margin: 0;
     }
 
     .container {
       background: white;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      padding: 60px 80px;
+      border-radius: 20px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+      text-align: left;
+      width: 900px;
+      max-width: 95%;
+    }
+
+    h1 {
+      font-size: 56px;
+      margin-bottom: 40px;
       text-align: center;
-      width: 400px;
-      transform: scale(1.05);
+      color: #111827;
+    }
+
+    label {
+      display: block;
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 20px;
+      margin-bottom: 8px;
+      color: #111827;
     }
 
     input {
       width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
+      padding: 18px;
+      margin: 0;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 18px;
       box-sizing: border-box;
+    }
+
+    input::placeholder {
+      color: #6b7280;
     }
 
     button {
       width: 100%;
-      padding: 10px;
-      background-color: #28a74f;
+      padding: 18px;
+      margin-top: 30px;
+      background-color: #2a8f3c;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 10px;
+      font-size: 22px;
+      font-weight: bold;
       cursor: pointer;
-      box-sizing: border-box;
+      transition: background-color 0.2s ease;
     }
 
     button:hover {
@@ -50,9 +73,44 @@
     }
 
     #message {
-      margin-top: 10px;
-      font-size: 14px;
-      min-height: 20px;
+      margin-top: 20px;
+      font-size: 18px;
+      min-height: 24px;
+      text-align: center;
+      color: #111827;
+    }
+
+    .footer-text {
+      text-align: center;
+      margin-top: 25px;
+      font-size: 18px;
+      color: #374151;
+    }
+
+    .footer-text a {
+      color: #2a8f3c;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .footer-text a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 40px 30px;
+        width: 90%;
+      }
+
+      h1 {
+        font-size: 40px;
+      }
+
+      input,
+      button {
+        font-size: 16px;
+      }
     }
   </style>
 </head>
@@ -61,14 +119,26 @@
     <h1>Register</h1>
 
     <form id="registerForm">
-      <input id="username" type="text" placeholder="Username" required />
-      <input id="email" type="email" placeholder="Email" required />
-      <input id="password" type="password" placeholder="Password" required />
-      <input id="confirmPassword" type="password" placeholder="Confirm Password" required />
+      <label for="username">Username</label>
+      <input id="username" type="text" placeholder="Enter your username" required />
+
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="Enter your email" required />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Enter your password" required />
+
+      <label for="confirmPassword">Confirm Password</label>
+      <input id="confirmPassword" type="password" placeholder="Confirm your password" required />
+
       <button type="submit">Register</button>
     </form>
 
     <p id="message"></p>
+
+    <p class="footer-text">
+      Already have an account? <a href="/login">Login</a>
+    </p>
   </div>
 
   <script>
